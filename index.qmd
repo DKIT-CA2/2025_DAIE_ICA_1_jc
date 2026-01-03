@@ -1,11 +1,59 @@
 ---
 title: "Home Page"
+format: html
+execute:
+  echo: true
+  warning: false
+  message: false
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
 
 ```{r}
-1 + 1
+#| include: false
+library(DBI)
+library(RSQLite)
+library(DT)
+
+db_file <- "virtual_production.db"
+
+# Fail early if Quarto can't see the file where it expects
+stopifnot(file.exists(db_file))
+
+con <- dbConnect(SQLite(), normalizePath(db_file, mustWork = TRUE))
+
+
+```
+
+<br> <br>
+
+```{r}
+#| echo: false
+#1. List the total budget allocated for productions in each country (via Clients + Productions), 
+#along with the count of projects per country. Display sorted by the total budget in
+#descending order.
+#defining te SQL block of data
+Question_01 <- "             
+SELECT
+  c.Country AS Country,
+  COUNT(p.ProductionID) AS ProjectCount,
+  SUM(p.Budget) AS TotalBudget
+FROM Clients c
+JOIN Productions p ON p.ClientID = c.ClientID
+GROUP BY c.Country
+ORDER BY TotalBudget DESC;
+"
+#ceates data in memeory of the block above
+Question_01_Result <- dbGetQuery(con, Question_01)         
+#Presents the data in table in HTML
+library(DT)
+#DT::datatable(Question_01_Result, options = list(pageLength = 20), rownames = FALSE)
+DT::datatable(
+  Question_01_Result,
+  caption = htmltools::tags$caption(
+    style = "caption-side: top; font-size: 1.5em; font-weight: bold; text-align: left;",
+    "Question_01: Total Budget and Project Count by Country"
+  ),
+  rownames = FALSE,
+  options = list(pageLength = 12)
+)
 ```
