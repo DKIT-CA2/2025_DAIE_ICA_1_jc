@@ -16,7 +16,7 @@ library(DT)
 
 db_file <- "virtual_production.db"
 
-# Fail early if Quarto can't see the file where it expects
+# stops if no file found
 stopifnot(file.exists(db_file))
 
 con <- dbConnect(SQLite(), normalizePath(db_file, mustWork = TRUE))
@@ -54,6 +54,61 @@ DT::datatable(
     "Question_01: Total Budget and Project Count by Country"
   ),
   rownames = FALSE,
-  options = list(pageLength = 12)
+  options = list(pageLength = 25)
 )
+```
+<br> <br> <br> <br>
+```{r}
+#| echo: false
+#2. List the average development time for productions, categorized by the number of assets
+#used.
+#1creates a temporary table AssetsPerProduction AS  that counts how many assets are linked to each production
+#2Link assets to environments, and  keep productions with no assets
+#3Count the number of assets found for each production
+#54count separately for each production
+#6Another temp table for days of production DevelopmentTime AS
+#7app.AssetCount, how many productions For each asset count
+Question_02 <- "
+WITH AssetsPerProduction AS (
+  SELECT
+    e.ProductionID,
+    COUNT(a.AssetID) AS AssetCount
+  FROM Environments e
+  LEFT JOIN Assets a ON a.EnvironmentID = e.EnvironmentID
+  GROUP BY e.ProductionID
+),
+DevelopmentTime AS (
+  SELECT
+    ProductionID,
+    CAST(julianday(EndDate) - julianday(StartDate) AS INTEGER) AS DevDays
+  FROM Productions
+  WHERE StartDate IS NOT NULL
+    AND EndDate IS NOT NULL
+)
+SELECT
+  app.AssetCount,
+  COUNT(*) AS ProductionCount,
+  ROUND(AVG(dt.DevDays), 1) AS AvgDevelopmentDays
+FROM AssetsPerProduction app
+JOIN DevelopmentTime dt
+  ON dt.ProductionID = app.ProductionID
+GROUP BY app.AssetCount
+ORDER BY app.AssetCount;
+"
+#query the db and store result in data frame
+#display the results in an interactive table
+Question_02_Result <- dbGetQuery(con, Question_02)
+library(DT)
+DT::datatable(
+  Question_02_Result,
+  caption = htmltools::tags$caption(
+    style = "caption-side: top; font-size: 1.5em; font-weight: bold; text-align: left;",
+    "Question 02: Average Development Time by Number of Assets Used"
+  ),
+  rownames = FALSE,
+  options = list(pageLength = 25)
+)
+
+
+
 ```
