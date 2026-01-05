@@ -199,8 +199,98 @@ DT::datatable(
     "Part two No:1 SQL Concepts LIKE and OR output."
   ),
   rownames = FALSE,
-  options = list(pageLength = 12)
+  options = list(pageLength = 25)
 )
+```
 
+
+<div style="margin-top: 80px;"></div>
+<h2>Part two No:2 SQL DISTINCT and ORDER BY</h2>
+
+``` sql
+SELECT DISTINCT
+  Country
+FROM Clients
+ORDER BY Country;
+```
+```{r}
+
+```
+<br><br>
+```{r}
+#| echo: false
+library(DBI)
+library(DT)
+
+Concepts_02 <- "
+SELECT DISTINCT
+  Country
+FROM Clients
+ORDER BY Country;
+"
+
+concepts_02_result <- dbGetQuery(con, Concepts_02)  #run sql query using db connection, save result as a data frame
+
+DT::datatable(
+  concepts_02_result,
+  caption = htmltools::tags$caption(
+    style = "caption-side: top; font-size: 1.5em; font-weight: bold;color: black; text-align: left;",
+    "Part two No:2 SQL DISTINCT and ORDER BY."
+  ),
+  rownames = FALSE,
+  options = list(pageLength = 25)
+)
+```
+
+<div style="margin-top: 80px;"></div>
+<h2>Part two No:3 SQL Subquery with SELECT</h2>
+
+``` sql
+SELECT
+  ProductionID,
+  Title,
+  Budget,
+  Status
+FROM Productions
+WHERE Budget > (
+  SELECT AVG(Budget)
+  FROM Productions
+)
+ORDER BY Budget DESC;
+```
+```{r}
+
+```
+<br><br>
+```{r}
+#| echo: false
+library(DBI)
+library(DT)
+
+Concepts_03 <- "
+SELECT
+  ProductionID,
+  Title,
+  Budget,
+  Status
+FROM Productions
+WHERE Budget > (
+  SELECT AVG(Budget)
+  FROM Productions
+)
+ORDER BY Budget DESC;
+"
+
+concepts_03_result <- dbGetQuery(con, Concepts_03)  #run sql query using db connection, save result as a data frame
+
+DT::datatable(
+  concepts_03_result,
+  caption = htmltools::tags$caption(
+    style = "caption-side: top; font-size: 1.5em; font-weight: bold;color: black; text-align: left;",
+    "Part two No:3 SQL Subquery with SELECT."
+  ),
+  rownames = FALSE,
+  options = list(pageLength = 25)
+)
 
 ```

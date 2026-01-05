@@ -1,11 +1,38 @@
 ---
 title: "notebook"
+format: html
+execute:
+  echo: true
+  warning: false
+  message: false
 ---
-
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
 ```{r}
-1 + 1
+#| include: false
+library(DBI)
+library(RSQLite)
+library(DT)
+library(tidyverse)
+
+
+db_file <- "virtual_production.db"
+# stops if no file found
+stopifnot(file.exists(db_file))
+
+con <- dbConnect(RSQLite::SQLite(), db_file)  #connect to the database
 ```
+```{r}
+dbListTables(con) #list all tables
+```
+```{r}
+dbListFields(con, "Productions") #list columns in Productions
+```
+```{r}
+dbGetQuery(con, "SELECT * FROM Productions LIMIT 10;") #gets first 10 entries in Productions
+```
+```{r}
+dbListFields(con, "ProductionCrew")
+```
+```{r}
+dbGetQuery(con, "SELECT * FROM ProductionCrew LIMIT 10;") #gets first 10 entries in ProductionCrew
+```
+
