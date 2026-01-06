@@ -1,38 +1,108 @@
 ---
-title: "notebook"
-format: html
+title: "linear Regression"
 execute:
   echo: true
   warning: false
   message: false
 ---
 ```{r}
-#| include: false
+
+#| echo: false
 library(DBI)
 library(RSQLite)
-library(DT)
 library(tidyverse)
+# Connect to the SQLite db
+con <- dbConnect(
+  SQLite(),
+  "virtual_production.db"
+)
+#The SQL query combines production information with crew data to create a dataset suitable for regression analys
+```
+### Building the Regression Dataset
+
+To perform linear regression, a modelling dataset was constructed from the production database.
+The success rate was defined as a binary variable where:
+
+- `1` indicates a completed production  
+- `0` indicates a production that was not completed  
+
+```sql
+SELECT
+  p.ProductionID,
+  p.Budget,
+  COUNT(pc.CrewID) AS CrewSize,
+  CASE
+    WHEN p.Status = 'Completed' THEN 1
+    ELSE 0
+  END AS SuccessRate
+FROM Productions p
+LEFT JOIN ProductionCrew pc
+  ON p.ProductionID = pc.ProductionID
+GROUP BY
+  p.ProductionID,
+  p.Budget,
+  p.Status;
+``` 
+```{r}
+# Run the SQL query and stores it  in a data frame
+reg_df <- dbGetQuery(con, "
+SELECT
+  p.ProductionID,
+  p.Budget,
+  COUNT(pc.CrewID) AS CrewSize,
+  CASE
+    WHEN p.Status = 'Completed' THEN 1
+    ELSE 0
+  END AS SuccessRate
+FROM Productions p
+LEFT JOIN ProductionCrew pc
+  ON p.ProductionID = pc.ProductionID
+GROUP BY
+  p.ProductionID,
+  p.Budget,
+  p.Status;
+")
+
+glimpse(reg_df)
+summary(reg_df)
+```  
+```{r}
+lm_model <- lm(SuccessRate ~ Budget + CrewSize, data = reg_df)
+summary(lm_model)  
+```
+```{r}
+reg_df <- reg_df %>%
+  mutate(
+    Predicted = predict(lm_model, newdata = reg_df),
+    Residual = SuccessRate - Predicted
+  )
+
+reg_df
+```
+
+```{r}
+ggplot(reg_df, aes(x = Predicted, y = SuccessRate)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Observed vs Predicted Production Success",
+    x = "Predicted Success (Linear Regression)",
+    y = "Observed Success (0 = Not Completed, 1 = Completed)"
+  ) +
+  theme_minimal()
+```
+## Interpretation of Model Coefficients
+This model was used to get a sense of how budget and crew size relate to whether a production actually gets finished or not.It’s meant to show general relationships rather than give exact predictions.
+
+Productions with bigger budgets tend to have a better chance of getting completed, increased finances usually means better resources.
+
+Regarding crew size having more people involved is generally linked with a higher chance of completion, likely because there are enough resources to deal with the workload.
+
+The intercept is just the model’s baseline when budget and crew size are zero and only used as a reference
 
 
-db_file <- "virtual_production.db"
-# stops if no file found
-stopifnot(file.exists(db_file))
+```{r}
 
-con <- dbConnect(RSQLite::SQLite(), db_file)  #connect to the database
 ```
-```{r}
-dbListTables(con) #list all tables
-```
-```{r}
-dbListFields(con, "Productions") #list columns in Productions
-```
-```{r}
-dbGetQuery(con, "SELECT * FROM Productions LIMIT 10;") #gets first 10 entries in Productions
-```
-```{r}
-dbListFields(con, "ProductionCrew")
-```
-```{r}
-dbGetQuery(con, "SELECT * FROM ProductionCrew LIMIT 10;") #gets first 10 entries in ProductionCrew
-```
+
 
